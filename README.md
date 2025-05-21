@@ -14,9 +14,9 @@
 ## 🏗️ Tech Stack
 
 * **Frontend**: [Flutter](https://flutter.dev/) (Desktop)
-* **Backend**: Python 3, integrated with a generative AI model (e.g., OpenAI API or local LLM)
-* **State Management**: Provider / Riverpod / BLoC (as used)
-* **Communication**: REST API or Platform Channels (for Python-Flutter interaction)
+* **Backend**: Python 3, integrated with a generative AI model (OpenAI API)
+* **State Management**: Riverpod
+* **Communication**: REST API (for Python-Flutter interaction)
 * **Storage**: SQLite / Shared Preferences / Local Filesystem
 
 ## 📦 Installation
