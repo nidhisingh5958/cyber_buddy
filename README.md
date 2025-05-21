@@ -1,9 +1,3 @@
-# cyber_buddy
-
-You're right — thanks for the correction! Since **Cyber Buddy** uses **Flutter** for the frontend, here's an updated `README.md` to reflect that:
-
----
-
 # 🛡️ Cyber Buddy
 
 **Cyber Buddy** is a generative AI-powered cybersecurity assistant desktop application designed to help users explore, understand, and manage cybersecurity tools and practices. With an intuitive Flutter-based UI and AI-driven backend, it empowers users to stay informed and secure in the digital world.
