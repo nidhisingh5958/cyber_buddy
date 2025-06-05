@@ -1,4 +1,4 @@
-import 'package:CuraDocs/common/components/colors.dart';
+import 'package:cyber_buddy/screens/components/colors.dart';
 import 'package:flutter/material.dart';
 
 ThemeData theme() {
