@@ -16,8 +16,8 @@ ThemeData theme() {
   );
 }
 
-CardTheme cardTheme() {
-  return CardTheme(
+CardThemeData cardTheme() {
+  return CardThemeData(
     elevation: 0.5,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     color: Colors.white,
