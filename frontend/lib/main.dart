@@ -1,5 +1,3 @@
-// In main.dart
-import 'package:cyber_buddy/screens/home_screen.dart';
 import 'package:cyber_buddy/utils/router.dart';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
