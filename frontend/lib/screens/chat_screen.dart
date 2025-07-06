@@ -1,5 +1,18 @@
+import 'package:cyber_buddy/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+
+class ChatMessage {
+  final String text;
+  final bool isUser;
+  final DateTime timestamp;
+
+  ChatMessage({
+    required this.text,
+    required this.isUser,
+    required this.timestamp,
+  });
+}
 
 class AnimatedParticle extends StatefulWidget {
   final int index;
@@ -125,12 +138,20 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
+  // Add API service instance
+  late ApiService _apiService;
+
   int _currentTabIndex = 0;
   List<ChatTab> _chatTabs = [];
+  bool _isLoading = false; // Add loading state
 
   @override
   void initState() {
     super.initState();
+
+    // Initialize API service
+    _apiService = ApiService();
+
     _fadeController = AnimationController(
       duration: Duration(milliseconds: 300),
       vsync: this,
@@ -144,44 +165,9 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     _chatTabs.add(
       ChatTab(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: "plan a ai assistant making plan for cyber security",
+        title: "Cyber Security Assistant",
         createdAt: DateTime.now(),
-        messages: [
-          ChatMessage(
-            text: "plan a ai assistant making plan for cyber security",
-            isUser: true,
-            timestamp: DateTime.now().subtract(Duration(minutes: 5)),
-          ),
-          ChatMessage(
-            text:
-                """I'll help you create a plan for developing an AI assistant focused on cybersecurity. I'll structure this as a comprehensive plan that covers key aspects of development and security considerations.
-
-1. Core Functionality Requirements:
-• Threat detection and analysis
-• Security assessment capabilities
-• Incident response guidance
-• Vulnerability scanning
-• Security best practices recommendations
-• Compliance monitoring
-
-2. Security Features:
-• End-to-end encryption
-• Secure data handling
-• Authentication and authorization
-• Audit logging
-• Data anonymization
-• Access control mechanisms
-
-3. Development Phases:
-
-Phase 1: Foundation
-• Define scope and use cases
-• Design system architecture
-• Implement core security features""",
-            isUser: false,
-            timestamp: DateTime.now().subtract(Duration(minutes: 4)),
-          ),
-        ],
+        messages: [],
       ),
     );
   }
@@ -237,21 +223,23 @@ Phase 1: Foundation
     }
   }
 
-  void _sendMessage() {
-    if (_messageController.text.trim().isEmpty || _chatTabs.isEmpty) return;
+  void _sendMessage() async {
+    if (_messageController.text.trim().isEmpty ||
+        _chatTabs.isEmpty ||
+        _isLoading)
+      return;
+
+    final userMessage = _messageController.text.trim();
 
     setState(() {
+      // Add user message
       _chatTabs[_currentTabIndex].messages.add(
-        ChatMessage(
-          text: _messageController.text.trim(),
-          isUser: true,
-          timestamp: DateTime.now(),
-        ),
+        ChatMessage(text: userMessage, isUser: true, timestamp: DateTime.now()),
       );
 
       // Update tab title if it's "~" (new chat)
       if (_chatTabs[_currentTabIndex].title == "~") {
-        String newTitle = _messageController.text.trim();
+        String newTitle = userMessage;
         if (newTitle.length > 40) {
           newTitle = newTitle.substring(0, 40) + "...";
         }
@@ -262,44 +250,39 @@ Phase 1: Foundation
           messages: _chatTabs[_currentTabIndex].messages,
         );
       }
+
+      _isLoading = true;
     });
 
     _messageController.clear();
     _scrollToBottom();
 
-    // Simulate AI response after a delay
-    Future.delayed(Duration(milliseconds: 1000), () {
+    try {
+      // Call the API
+      String response = await _apiService.chat(userMessage);
+
+      setState(() {
+        _chatTabs[_currentTabIndex].messages.add(
+          ChatMessage(text: response, isUser: false, timestamp: DateTime.now()),
+        );
+        _isLoading = false;
+      });
+    } catch (e) {
+      // Handle error
       setState(() {
         _chatTabs[_currentTabIndex].messages.add(
           ChatMessage(
             text:
-                """I'd be happy to help you with that! Here are some key considerations:
-
-**Technical Requirements:**
-• Programming language selection
-• Framework and libraries needed
-• Database requirements
-• API integrations
-
-**Project Scope:**
-• Core features to implement
-• User interface requirements
-• Performance expectations
-• Security considerations
-
-**Development Approach:**
-• Project timeline
-• Testing strategy
-• Deployment plan
-
-Can you provide more details about what specific type of project you're working on?""",
+                "Sorry, I encountered an error while processing your request. Please check your connection and try again.\n\nError: ${e.toString()}",
             isUser: false,
             timestamp: DateTime.now(),
           ),
         );
+        _isLoading = false;
       });
-      _scrollToBottom();
-    });
+    }
+
+    _scrollToBottom();
   }
 
   void _scrollToBottom() {
@@ -324,7 +307,7 @@ Can you provide more details about what specific type of project you're working 
       backgroundColor: Color(0xFF0f0f0f),
       body: Column(
         children: [
-          // Replace the existing top bar Container in your ChatScreen build method with this:
+          // Top bar with tabs
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -342,17 +325,15 @@ Can you provide more details about what specific type of project you're working 
             ),
             child: SafeArea(
               child: Container(
-                height: 50, // Reduced height for more compact look
+                height: 50,
                 child: Row(
                   children: [
-                    // Chat Tabs - with improved spacing
+                    // Chat Tabs
                     Expanded(
                       child: SingleChildScrollView(
                         controller: _tabScrollController,
                         scrollDirection: Axis.horizontal,
-                        padding: EdgeInsets.only(
-                          left: 12,
-                        ), // Reduced left padding
+                        padding: EdgeInsets.only(left: 12),
                         child: Row(
                           children: [
                             ..._chatTabs.asMap().entries.map((entry) {
@@ -361,9 +342,7 @@ Can you provide more details about what specific type of project you're working 
                               bool isActive = index == _currentTabIndex;
 
                               return Container(
-                                margin: EdgeInsets.only(
-                                  right: 6,
-                                ), // Reduced margin between tabs
+                                margin: EdgeInsets.only(right: 6),
                                 child: Material(
                                   color: Colors.transparent,
                                   child: InkWell(
@@ -375,13 +354,12 @@ Can you provide more details about what specific type of project you're working 
                                     borderRadius: BorderRadius.circular(6),
                                     child: Container(
                                       constraints: BoxConstraints(
-                                        minWidth: 100, // Reduced minimum width
-                                        maxWidth: 200, // Reduced maximum width
+                                        minWidth: 100,
+                                        maxWidth: 200,
                                       ),
                                       padding: EdgeInsets.symmetric(
-                                        horizontal:
-                                            8, // Reduced horizontal padding
-                                        vertical: 8, // Reduced vertical padding
+                                        horizontal: 8,
+                                        vertical: 8,
                                       ),
                                       decoration: BoxDecoration(
                                         color:
@@ -416,11 +394,10 @@ Can you provide more details about what specific type of project you're working 
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          // Tab icon - smaller
                                           Container(
                                             margin: EdgeInsets.only(right: 6),
                                             child: Icon(
-                                              Icons.chat_bubble_outline,
+                                              Icons.security,
                                               size: 14,
                                               color:
                                                   isActive
@@ -428,7 +405,6 @@ Can you provide more details about what specific type of project you're working 
                                                       : Colors.grey[500],
                                             ),
                                           ),
-                                          // Tab title - with better flex handling
                                           Flexible(
                                             child: Container(
                                               constraints: BoxConstraints(
@@ -444,8 +420,7 @@ Can you provide more details about what specific type of project you're working 
                                                       isActive
                                                           ? Colors.white
                                                           : Colors.grey[400],
-                                                  fontSize:
-                                                      13, // Slightly smaller font
+                                                  fontSize: 13,
                                                   fontWeight:
                                                       isActive
                                                           ? FontWeight.w600
@@ -456,11 +431,8 @@ Can you provide more details about what specific type of project you're working 
                                               ),
                                             ),
                                           ),
-                                          // Close button - better positioned and sized
                                           if (_chatTabs.length > 1) ...[
-                                            SizedBox(
-                                              width: 4,
-                                            ), // Reduced space between title and close button
+                                            SizedBox(width: 4),
                                             GestureDetector(
                                               onTap: () => _closeChat(index),
                                               child: Container(
@@ -472,8 +444,7 @@ Can you provide more details about what specific type of project you're working 
                                                 ),
                                                 child: Icon(
                                                   Icons.close,
-                                                  size:
-                                                      14, // Smaller close icon
+                                                  size: 14,
                                                   color:
                                                       isActive
                                                           ? Colors.grey[300]
@@ -494,7 +465,7 @@ Can you provide more details about what specific type of project you're working 
                       ),
                     ),
 
-                    // Add New Tab Button - more compact
+                    // Add New Tab Button
                     Container(
                       margin: EdgeInsets.symmetric(horizontal: 6),
                       child: Material(
@@ -503,7 +474,7 @@ Can you provide more details about what specific type of project you're working 
                           onTap: _createNewChat,
                           borderRadius: BorderRadius.circular(6),
                           child: Container(
-                            padding: EdgeInsets.all(8), // Reduced padding
+                            padding: EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               color: Color(0xFF2d2d2d),
                               borderRadius: BorderRadius.circular(6),
@@ -515,14 +486,14 @@ Can you provide more details about what specific type of project you're working 
                             child: Icon(
                               Icons.add,
                               color: Colors.grey[300],
-                              size: 16, // Smaller icon
+                              size: 16,
                             ),
                           ),
                         ),
                       ),
                     ),
 
-                    // Menu/Options Button - more compact
+                    // Menu/Options Button
                     Container(
                       margin: EdgeInsets.only(right: 6),
                       child: Material(
@@ -530,10 +501,11 @@ Can you provide more details about what specific type of project you're working 
                         child: InkWell(
                           onTap: () {
                             // Add menu functionality here
+                            _showOptionsMenu(context);
                           },
                           borderRadius: BorderRadius.circular(6),
                           child: Container(
-                            padding: EdgeInsets.all(8), // Reduced padding
+                            padding: EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               color: Color(0xFF2d2d2d),
                               borderRadius: BorderRadius.circular(6),
@@ -545,14 +517,14 @@ Can you provide more details about what specific type of project you're working 
                             child: Icon(
                               Icons.keyboard_arrow_down,
                               color: Colors.grey[300],
-                              size: 16, // Smaller icon
+                              size: 16,
                             ),
                           ),
                         ),
                       ),
                     ),
 
-                    // User Profile - more compact
+                    // User Profile
                     Container(
                       margin: EdgeInsets.only(right: 12),
                       child: Container(
@@ -564,14 +536,14 @@ Can you provide more details about what specific type of project you're working 
                           ),
                         ),
                         child: CircleAvatar(
-                          radius: 14, // Smaller avatar
+                          radius: 14,
                           backgroundColor: Color(0xFF2d2d2d),
                           child: Text(
                             'N',
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
-                              fontSize: 12, // Smaller font
+                              fontSize: 12,
                             ),
                           ),
                         ),
@@ -614,13 +586,13 @@ Can you provide more details about what specific type of project you're working 
                                           MainAxisAlignment.center,
                                       children: [
                                         Icon(
-                                          Icons.chat_bubble_outline,
+                                          Icons.security,
                                           size: 64,
                                           color: Colors.grey[600],
                                         ),
                                         SizedBox(height: 16),
                                         Text(
-                                          'Start a new conversation',
+                                          'Welcome to Cyber Buddy',
                                           style: TextStyle(
                                             color: Colors.grey[400],
                                             fontSize: 18,
@@ -629,7 +601,7 @@ Can you provide more details about what specific type of project you're working 
                                         ),
                                         SizedBox(height: 8),
                                         Text(
-                                          'Type a message to begin',
+                                          'Ask me about cybersecurity topics',
                                           style: TextStyle(
                                             color: Colors.grey[600],
                                             fontSize: 14,
@@ -644,8 +616,14 @@ Can you provide more details about what specific type of project you're working 
                                       horizontal: 20,
                                       vertical: 16,
                                     ),
-                                    itemCount: _currentMessages.length,
+                                    itemCount:
+                                        _currentMessages.length +
+                                        (_isLoading ? 1 : 0),
                                     itemBuilder: (context, index) {
+                                      if (index == _currentMessages.length &&
+                                          _isLoading) {
+                                        return _buildLoadingMessage();
+                                      }
                                       return _buildMessageText(
                                         _currentMessages[index],
                                         index,
@@ -660,6 +638,239 @@ Can you provide more details about what specific type of project you're working 
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showOptionsMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Color(0xFF1a1a1a),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[600],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              SizedBox(height: 20),
+              _buildMenuOption(
+                icon: Icons.clear_all,
+                title: 'Clear Chat',
+                onTap: () {
+                  Navigator.pop(context);
+                  _clearCurrentChat();
+                },
+              ),
+              _buildMenuOption(
+                icon: Icons.file_upload_outlined,
+                title: 'Export Chat',
+                onTap: () {
+                  Navigator.pop(context);
+                  _exportChat();
+                },
+              ),
+              _buildMenuOption(
+                icon: Icons.settings,
+                title: 'Settings',
+                onTap: () {
+                  Navigator.pop(context);
+                  _showSettings();
+                },
+              ),
+              _buildMenuOption(
+                icon: Icons.info_outline,
+                title: 'About',
+                onTap: () {
+                  Navigator.pop(context);
+                  _showAbout();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMenuOption({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+          margin: EdgeInsets.symmetric(vertical: 4),
+          decoration: BoxDecoration(
+            color: Color(0xFF2d2d2d),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: Colors.grey[300], size: 20),
+              SizedBox(width: 16),
+              Text(
+                title,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Spacer(),
+              Icon(Icons.arrow_forward_ios, color: Colors.grey[500], size: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _clearCurrentChat() {
+    setState(() {
+      _chatTabs[_currentTabIndex].messages.clear();
+    });
+  }
+
+  void _exportChat() {
+    // Implement chat export functionality
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Export functionality coming soon!'),
+        backgroundColor: Color(0xFF4a9eff),
+      ),
+    );
+  }
+
+  void _showSettings() {
+    // Implement settings screen
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Settings screen coming soon!'),
+        backgroundColor: Color(0xFF4a9eff),
+      ),
+    );
+  }
+
+  void _showAbout() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: Color(0xFF1a1a1a),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.security, color: Color(0xFF4a9eff)),
+                SizedBox(width: 8),
+                Text('Cyber Buddy', style: TextStyle(color: Colors.white)),
+              ],
+            ),
+            content: Text(
+              'Your personal cybersecurity assistant.\n\nVersion 1.0.0\nBuilt with Flutter',
+              style: TextStyle(color: Colors.grey[300]),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('OK', style: TextStyle(color: Color(0xFF4a9eff))),
+              ),
+            ],
+          ),
+    );
+  }
+
+  Widget _buildLoadingMessage() {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 12),
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Color(0xFF1a1a1a).withOpacity(0.8),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Color(0xFF2d2d2d), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF4a9eff), Color(0xFF00b894)],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.psychology_outlined,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                    SizedBox(width: 6),
+                    Text(
+                      'AI Assistant',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          Row(
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4a9eff)),
+                ),
+              ),
+              SizedBox(width: 12),
+              Text(
+                'Thinking...',
+                style: TextStyle(
+                  color: Colors.grey[400],
+                  fontSize: 16,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -722,13 +933,13 @@ Can you provide more details about what specific type of project you're working 
                             Icon(
                               message.isUser
                                   ? Icons.person_outline
-                                  : Icons.psychology_outlined,
+                                  : Icons.security,
                               color: Colors.white,
                               size: 14,
                             ),
                             SizedBox(width: 6),
                             Text(
-                              message.isUser ? 'You' : 'AI Assistant',
+                              message.isUser ? 'You' : 'Cyber Buddy',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,
@@ -771,316 +982,171 @@ Can you provide more details about what specific type of project you're working 
     );
   }
 
-  Widget _buildMessageInput() {
-    return Container(
-      padding: EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF1a1a1a).withOpacity(0.95), Color(0xFF2d2d2d)],
-        ),
-        border: Border(
-          top: BorderSide(color: Color(0xFF404040).withOpacity(0.5), width: 1),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 20,
-            offset: Offset(0, -5),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: Color(0xFF2d2d2d),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: IconButton(
-              icon: Icon(
-                Icons.attach_file_outlined,
-                color: Colors.white70,
-                size: 20,
-              ),
-              onPressed: () {},
-            ),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-              decoration: BoxDecoration(
-                color: Color(0xFF1a1a1a),
-                borderRadius: BorderRadius.circular(25),
-                border: Border.all(
-                  color: Color(0xFF404040).withOpacity(0.7),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _messageController,
-                      focusNode: _focusNode,
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                      decoration: InputDecoration(
-                        hintText: 'Type your message...',
-                        hintStyle: TextStyle(
-                          color: Colors.grey[500],
-                          fontSize: 16,
-                        ),
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      maxLines: null,
-                      onSubmitted: (_) => _sendMessage(),
-                    ),
-                  ),
-                  Container(
-                    margin: EdgeInsets.only(left: 8),
-                    decoration: BoxDecoration(
-                      color: Color(0xFF2d2d2d),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: IconButton(
-                      icon: Icon(
-                        Icons.mic_outlined,
-                        color: Colors.white70,
-                        size: 18,
-                      ),
-                      onPressed: () {},
-                      padding: EdgeInsets.all(8),
-                      constraints: BoxConstraints(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(width: 12),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF4a9eff), Color(0xFF6c5ce7)],
-              ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Color(0xFF4a9eff).withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: IconButton(
-              icon: Icon(Icons.send_rounded, color: Colors.white, size: 20),
-              onPressed: _sendMessage,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatTime(DateTime dateTime) {
-    return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-  }
-
   Widget _buildFormattedText(String text) {
+    final lines = text.split('\n');
     List<Widget> widgets = [];
-    List<String> lines = text.split('\n');
 
-    for (String line in lines) {
-      if (line.trim().isEmpty) {
-        widgets.add(SizedBox(height: 8));
-        continue;
-      }
+    for (int i = 0; i < lines.length; i++) {
+      final line = lines[i];
 
-      // Handle numbered sections (1. 2. 3.)
-      if (RegExp(r'^\d+\.\s+').hasMatch(line)) {
-        widgets.add(SizedBox(height: 16));
+      // Handle different text formatting
+      if (line.startsWith('# ')) {
+        // Header
         widgets.add(
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Color(0xFF2d2d2d).withOpacity(0.5),
-              borderRadius: BorderRadius.circular(8),
-            ),
+          Padding(
+            padding: EdgeInsets.only(bottom: 8, top: i > 0 ? 12 : 0),
             child: Text(
-              line,
+              line.substring(2),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        );
+      } else if (line.startsWith('## ')) {
+        // Subheader
+        widgets.add(
+          Padding(
+            padding: EdgeInsets.only(bottom: 6, top: i > 0 ? 10 : 0),
+            child: Text(
+              line.substring(3),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        );
+      } else if (line.startsWith('### ')) {
+        // Sub-subheader
+        widgets.add(
+          Padding(
+            padding: EdgeInsets.only(bottom: 4, top: i > 0 ? 8 : 0),
+            child: Text(
+              line.substring(4),
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 16,
-                fontWeight: FontWeight.w600,
-                height: 1.5,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
         );
-        widgets.add(SizedBox(height: 8));
-        continue;
-      }
-
-      // Handle bullet points (•)
-      if (line.startsWith('•')) {
+      } else if (line.startsWith('> ')) {
+        // Quote
         widgets.add(
           Padding(
-            padding: EdgeInsets.only(left: 20, top: 6),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  margin: EdgeInsets.only(top: 8, right: 12),
-                  width: 4,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Color(0xFF4a9eff),
-                    shape: BoxShape.circle,
-                  ),
+            padding: EdgeInsets.only(bottom: 8, top: i > 0 ? 12 : 0),
+
+            child: Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Color(0xFF2d2d2d).withOpacity(0.8),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Color(0xFF4a9eff).withOpacity(0.3),
+                  width: 1,
                 ),
-                Expanded(
-                  child: Text(
-                    line.substring(1).trim(),
-                    style: TextStyle(
-                      color: Colors.grey[200],
-                      fontSize: 15,
-                      height: 1.5,
-                    ),
-                  ),
+              ),
+              child: Text(
+                line.substring(2),
+                style: TextStyle(
+                  color: Colors.grey[300],
+                  fontSize: 14,
+                  fontStyle: FontStyle.italic,
                 ),
-              ],
+              ),
             ),
           ),
         );
-        continue;
-      }
-
-      // Handle phase headers (Phase 1: Foundation)
-      if (line.startsWith('Phase ')) {
-        widgets.add(SizedBox(height: 16));
-        widgets.add(
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Color(0xFF4a9eff).withOpacity(0.2),
-                  Color(0xFF6c5ce7).withOpacity(0.2),
-                ],
+      } else if (line.startsWith('```')) {
+        // Code block
+        if (i == 0 || !lines[i - 1].startsWith('```')) {
+          widgets.add(
+            Padding(
+              padding: EdgeInsets.only(bottom: 8, top: i > 0 ? 12 : 0),
+              child: Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Color(0xFF2d2d2d).withOpacity(0.8),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Color(0xFF4a9eff).withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  line.substring(3), // Skip the ``` and language
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'Courier',
+                    fontSize: 14,
+                  ),
+                ),
               ),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Color(0xFF4a9eff).withOpacity(0.3)),
             ),
+          );
+        }
+      } else {
+        // Regular text
+        widgets.add(
+          Padding(
+            padding: EdgeInsets.only(bottom: 8, top: i > 0 ? 12 : 0),
             child: Text(
               line,
-              style: TextStyle(
-                color: Color(0xFF4a9eff),
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                height: 1.4,
-              ),
+              style: TextStyle(color: Colors.grey[300], fontSize: 14),
             ),
           ),
         );
-        widgets.add(SizedBox(height: 12));
-        continue;
-      }
-
-      // Handle bold text (**text**)
-      if (line.contains('**')) {
-        widgets.add(SizedBox(height: 12));
-        widgets.add(_buildRichText(line));
-        widgets.add(SizedBox(height: 8));
-        continue;
-      }
-
-      // Regular text
-      widgets.add(
-        Text(
-          line,
-          style: TextStyle(
-            color: Colors.grey[100],
-            fontSize: 16,
-            height: 1.6,
-            letterSpacing: 0.2,
-          ),
-        ),
-      );
-
-      if (lines.indexOf(line) < lines.length - 1) {
-        widgets.add(SizedBox(height: 6));
       }
     }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: widgets,
     );
   }
 
-  Widget _buildRichText(String text) {
-    List<TextSpan> spans = [];
-    RegExp boldRegex = RegExp(r'\*\*(.*?)\*\*');
-    int lastIndex = 0;
-
-    for (Match match in boldRegex.allMatches(text)) {
-      // Add text before the bold part
-      if (match.start > lastIndex) {
-        spans.add(
-          TextSpan(
-            text: text.substring(lastIndex, match.start),
-            style: TextStyle(color: Colors.grey[100], fontSize: 16),
-          ),
-        );
-      }
-
-      // Add bold text with gradient color
-      spans.add(
-        TextSpan(
-          text: match.group(1),
-          style: TextStyle(
-            color: Color(0xFF4a9eff),
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      );
-
-      lastIndex = match.end;
-    }
-
-    // Add remaining text
-    if (lastIndex < text.length) {
-      spans.add(
-        TextSpan(
-          text: text.substring(lastIndex),
-          style: TextStyle(color: Colors.grey[100], fontSize: 16),
-        ),
-      );
-    }
-
-    return RichText(text: TextSpan(children: spans));
+  String _formatTime(DateTime dateTime) {
+    return "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}";
   }
-}
 
-class ChatMessage {
-  final String text;
-  final bool isUser;
-  final DateTime timestamp;
-
-  ChatMessage({
-    required this.text,
-    required this.isUser,
-    required this.timestamp,
-  });
+  Widget _buildMessageInput() {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Color(0xFF1a1a1a).withOpacity(0.9),
+        border: Border(top: BorderSide(color: Color(0xFF2d2d2d), width: 1)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _messageController,
+              style: TextStyle(color: Colors.white, fontSize: 16),
+              decoration: InputDecoration(
+                hintText: 'Type your message...',
+                hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
+                border: InputBorder.none,
+              ),
+            ),
+          ),
+          SizedBox(width: 12),
+          GestureDetector(
+            onTap: _sendMessage,
+            child: Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Color(0xFF4a9eff),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.send, color: Colors.white, size: 20),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

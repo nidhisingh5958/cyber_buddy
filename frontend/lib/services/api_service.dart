@@ -4,13 +4,13 @@ import 'package:http/http.dart' as http;
 class ApiService {
   final String baseUrl;
 
-  ApiService({this.baseUrl = 'http://10.0.2.2:8000'});
+  ApiService({this.baseUrl = 'http://0.0.0.0:8000'});
 
   Future<String> chat(String prompt) async {
     final res = await http.post(
       Uri.parse('$baseUrl/chat/'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'prompt': prompt}),
+      body: jsonEncode({'prompt ': prompt}),
     );
     if (res.statusCode == 200) {
       return jsonDecode(res.body)['response'];
