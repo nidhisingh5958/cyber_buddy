@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  cyber_buddy-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cyber_buddy_backend
+    ports:
+      - "8000:8000"

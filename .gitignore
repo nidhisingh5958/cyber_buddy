@@ -1,2 +1,4 @@
 .DS_Store
 .venv
+keys.py
+__pycache__
