@@ -201,10 +201,6 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                     color: Colors.purple,
                     onpressed: () {
                       context.goNamed(RouteConstants.chat);
-                      // You can also show a dialog or snackbar
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Starting a new project...')),
-                      );
                     },
                   ),
                 ),
@@ -212,12 +208,12 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                 Expanded(
                   child: _buildActionCard(
                     icon: Icons.rocket_outlined,
-                    title: 'Deploy',
-                    subtitle: 'Deploy your project',
+                    title: 'Logs',
+                    subtitle: 'Summarise your logs',
                     color: Colors.orange,
                     onpressed:
                         () => ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Deploying your project...')),
+                          SnackBar(content: Text('Summarising logs...')),
                         ),
                   ),
                 ),
