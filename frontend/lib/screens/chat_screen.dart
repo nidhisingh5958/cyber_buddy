@@ -1,6 +1,6 @@
-import 'package:cyber_buddy/services/api_service.dart';
+import 'package:cyber_buddy/services/chat_api.dart';
 import 'package:cyber_buddy/widgets/animated_particle.dart';
-import 'package:cyber_buddy/widgets/options_menu.dart';
+import 'package:cyber_buddy/screens/components/options_menu.dart';
 import 'package:flutter/material.dart';
 
 class ChatMessage {
@@ -42,9 +42,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
-  // Add API service instance
-  late ApiService _apiService;
-
   int _currentTabIndex = 0;
   List<ChatTab> _chatTabs = [];
   bool _isLoading = false; // Add loading state
@@ -52,9 +49,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-
-    // Initialize API service
-    _apiService = ApiService();
 
     _fadeController = AnimationController(
       duration: Duration(milliseconds: 300),
@@ -127,44 +121,20 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _sendMessage() async {
-    if (_messageController.text.trim().isEmpty ||
-        _chatTabs.isEmpty ||
-        _isLoading)
-      return;
-
-    final userMessage = _messageController.text.trim();
+  void _sendMessage(String message) async {
+    if (message.trim().isEmpty) return;
 
     setState(() {
-      // Add user message
       _chatTabs[_currentTabIndex].messages.add(
-        ChatMessage(text: userMessage, isUser: true, timestamp: DateTime.now()),
+        ChatMessage(text: message, isUser: true, timestamp: DateTime.now()),
       );
-
-      // Update tab title if it's "~" (new chat)
-      if (_chatTabs[_currentTabIndex].title == "~") {
-        String newTitle = userMessage;
-        if (newTitle.length > 40) {
-          newTitle = newTitle.substring(0, 40) + "...";
-        }
-        _chatTabs[_currentTabIndex] = ChatTab(
-          id: _chatTabs[_currentTabIndex].id,
-          title: newTitle,
-          createdAt: _chatTabs[_currentTabIndex].createdAt,
-          messages: _chatTabs[_currentTabIndex].messages,
-        );
-      }
-
       _isLoading = true;
     });
 
     _messageController.clear();
-    _scrollToBottom();
 
     try {
-      // Call the API
-      String response = await _apiService.chat(userMessage);
-
+      final response = await ChatService.sendMessage(message);
       setState(() {
         _chatTabs[_currentTabIndex].messages.add(
           ChatMessage(text: response, isUser: false, timestamp: DateTime.now()),
@@ -172,12 +142,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         _isLoading = false;
       });
     } catch (e) {
-      // Handle error
       setState(() {
         _chatTabs[_currentTabIndex].messages.add(
           ChatMessage(
-            text:
-                "Sorry, I encountered an error while processing your request. Please check your connection and try again.\n\nError: ${e.toString()}",
+            text: 'Error: ${e.toString()}',
             isUser: false,
             timestamp: DateTime.now(),
           ),
@@ -185,8 +153,6 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         _isLoading = false;
       });
     }
-
-    _scrollToBottom();
   }
 
   void _scrollToBottom() {
@@ -363,7 +329,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                                   ),
                                 ),
                               );
-                            }).toList(),
+                            }),
                           ],
                         ),
                       ),
@@ -893,7 +859,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           ),
           SizedBox(width: 12),
           GestureDetector(
-            onTap: _sendMessage,
+            onTap: () => _sendMessage(_messageController.text),
             child: Container(
               padding: EdgeInsets.all(12),
               decoration: BoxDecoration(

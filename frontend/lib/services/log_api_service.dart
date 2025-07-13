@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 class ApiService {
   final String baseUrl;
 
-  ApiService({this.baseUrl = 'http://0.0.0.0:8000'});
+  ApiService({this.baseUrl = 'http://192.168.1.7:8000'});
 
   Future<String> chat(String prompt) async {
     final res = await http.post(
