@@ -199,6 +199,36 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                 height: 50,
                 child: Row(
                   children: [
+                    // home icon
+                    Container(
+                      margin: EdgeInsets.only(left: 12, right: 6),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () {
+                            // Navigate to home or perform home action
+                            Navigator.pop(context);
+                          },
+                          borderRadius: BorderRadius.circular(6),
+                          child: Container(
+                            padding: EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Color(0xFF2d2d2d),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: Color(0xFF404040).withOpacity(0.5),
+                                width: 1,
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.home,
+                              color: Colors.grey[300],
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                     // Chat Tabs
                     Expanded(
                       child: SingleChildScrollView(
@@ -450,8 +480,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Color(0xFF0f0f0f).withOpacity(0.95),
-                          Color.fromARGB(144, 89, 92, 91).withOpacity(0.98),
+                          Color.fromARGB(255, 170, 170, 176).withOpacity(0.95),
+                          Colors.transparent,
                         ],
                       ),
                     ),
