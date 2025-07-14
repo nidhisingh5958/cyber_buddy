@@ -2,6 +2,7 @@ import 'package:cyber_buddy/services/chat_api.dart';
 import 'package:cyber_buddy/widgets/animated_particle.dart';
 import 'package:cyber_buddy/screens/components/options_menu.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class ChatMessage {
   final String text;
@@ -450,7 +451,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                         end: Alignment.bottomCenter,
                         colors: [
                           Color(0xFF0f0f0f).withOpacity(0.95),
-                          Color(0xFF1a1a1a).withOpacity(0.98),
+                          Color.fromARGB(144, 89, 92, 91).withOpacity(0.98),
                         ],
                       ),
                     ),
@@ -675,6 +676,43 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                       ),
                       Spacer(),
                       Container(
+                        margin: EdgeInsets.only(left: 8),
+                        child: GestureDetector(
+                          child: Icon(
+                            message.isUser ? Icons.person_outline : Icons.copy,
+                            color:
+                                message.isUser
+                                    ? Color(0xFF6c5ce7)
+                                    : Color(0xFF4a9eff),
+                            size: 16,
+                          ),
+                          onTap: () {
+                            // Handle copy or user profile action
+                            if (message.isUser) {
+                              // Show user profile
+                              debugPrint('User profile tapped');
+                            } else {
+                              // Copy message text to clipboard
+                              Clipboard.setData(
+                                ClipboardData(text: message.text),
+                              ).then((_) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Copied to your clipboard !'),
+                                  ),
+                                );
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Message copied to clipboard'),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Container(
                         padding: EdgeInsets.symmetric(
                           horizontal: 8,
                           vertical: 4,
@@ -849,12 +887,15 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           Expanded(
             child: TextField(
               controller: _messageController,
+              focusNode: _focusNode,
               style: TextStyle(color: Colors.white, fontSize: 16),
               decoration: InputDecoration(
                 hintText: 'Type your message...',
                 hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
                 border: InputBorder.none,
               ),
+              onSubmitted: (text) => _sendMessage(text),
+              textInputAction: TextInputAction.send,
             ),
           ),
           SizedBox(width: 12),
