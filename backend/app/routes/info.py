@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-router = APIRouter()
+info_route = APIRouter()
 
 cyber_topics = {
     "firewall": "A firewall is a network security device that monitors and controls incoming and outgoing network traffic based on predetermined security rules.",
@@ -9,6 +9,6 @@ cyber_topics = {
     "nmap": "Nmap (Network Mapper) is an open source tool for network exploration and security auditing. It is used to discover hosts and services on a computer network by sending packets and analyzing the responses.",
 }
 
-@router.get('/{topic}', response_model=str)
+@info_route.get('/{topic}', response_model=str)
 def get_topic_info(topic: str):
     return {"topic": topic, "description": cyber_topics.get(topic.lower(), "Topic not found. Please try another one.")}
