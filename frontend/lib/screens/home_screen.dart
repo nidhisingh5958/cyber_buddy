@@ -182,13 +182,13 @@ class _DesktopHomePageState extends State<DesktopHomePage>
               children: [
                 Expanded(
                   child: _buildActionCard(
-                    icon: Icons.download_outlined,
-                    title: 'Install',
-                    subtitle: 'Install a binary/dependency',
+                    icon: Icons.toll_outlined,
+                    title: 'Tools',
+                    subtitle: 'Get to know cyber tools and laws',
                     color: Colors.blue,
                     onpressed:
                         () => ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Installing a binary...')),
+                          SnackBar(content: Text(' Fetching tools... ')),
                         ),
                   ),
                 ),
@@ -196,8 +196,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                 Expanded(
                   child: _buildActionCard(
                     icon: Icons.code_outlined,
-                    title: 'Code',
-                    subtitle: 'Start a new project/feature or fix a bug',
+                    title: 'Chat',
+                    subtitle: 'Chat with Cyber Buddy',
                     color: Colors.purple,
                     onpressed: () {
                       context.goNamed(RouteConstants.chat);
@@ -221,13 +221,13 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                 Expanded(
                   child: _buildActionCard(
                     icon: Icons.auto_awesome_outlined,
-                    title: 'Something else?',
-                    subtitle: 'Pair with an Agent to accomplish another task',
+                    title: 'Script generator',
+                    subtitle: 'Generate scripts with AI',
                     color: Colors.green,
                     onpressed: () {
-                      // Handle "Something else?" action
+                      // Handle "Script generator" action
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Pairing with an Agent...')),
+                        SnackBar(content: Text('Generating script...')),
                       );
                     },
                   ),

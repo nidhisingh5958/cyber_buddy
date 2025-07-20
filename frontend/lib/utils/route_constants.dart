@@ -13,6 +13,9 @@ class RouteConstants {
   // inner routes
   static String home = "home";
   static String chat = "chat";
+  static String tools = "tools";
+  static String logs = "logs";
+  static String scriptGenerator = "scriptGenerator";
   static String profile = "profile";
   // static String documents = "documents";
   // static String addDocument = "addDocument";
