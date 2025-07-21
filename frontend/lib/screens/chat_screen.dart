@@ -3,6 +3,8 @@ import 'package:cyber_buddy/widgets/animated_particle.dart';
 import 'package:cyber_buddy/screens/components/options_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:markdown_widget/markdown_widget.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ChatMessage {
   final String text;
@@ -31,6 +33,7 @@ class ChatTab {
 }
 
 class ChatScreen extends StatefulWidget {
+  const ChatScreen({super.key});
   @override
   _ChatScreenState createState() => _ChatScreenState();
 }
@@ -40,6 +43,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   final ScrollController _tabScrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
+  final chatService = ChatService();
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
@@ -135,10 +139,15 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     _messageController.clear();
 
     try {
-      final response = await ChatService.sendMessage(message);
+      final response = await chatService.sendMessage(message);
       setState(() {
         _chatTabs[_currentTabIndex].messages.add(
-          ChatMessage(text: response, isUser: false, timestamp: DateTime.now()),
+          ChatMessage(
+            // Fix the response handling
+            text: response.toString(),
+            timestamp: DateTime.now(),
+            isUser: false,
+          ),
         );
         _isLoading = false;
       });
@@ -154,6 +163,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         _isLoading = false;
       });
     }
+
+    _scrollToBottom();
   }
 
   void _scrollToBottom() {
@@ -166,6 +177,31 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         );
       }
     });
+  }
+
+  void _launchURL(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not launch URL: $url'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Invalid URL: $url'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   List<ChatMessage> get _currentMessages {
@@ -775,129 +811,119 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildFormattedText(String text) {
-    final lines = text.split('\n');
-    List<Widget> widgets = [];
-
-    for (int i = 0; i < lines.length; i++) {
-      final line = lines[i];
-
-      // Handle different text formatting
-      if (line.startsWith('# ')) {
-        // Header
-        widgets.add(
-          Padding(
-            padding: EdgeInsets.only(bottom: 8, top: i > 0 ? 12 : 0),
-            child: Text(
-              line.substring(2),
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+    return MarkdownWidget(
+      data: text,
+      config: MarkdownConfig(
+        configs: [
+          // Code block configuration
+          PreConfig(
+            decoration: BoxDecoration(
+              color: Color(0xFF2d2d2d).withOpacity(0.8),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: Color(0xFF4a9eff).withOpacity(0.3),
+                width: 1,
               ),
+            ),
+            padding: EdgeInsets.all(12),
+            textStyle: TextStyle(
+              color: Color(0xFF00ff88), // Green color for code
+              fontFamily: 'Courier New',
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
             ),
           ),
-        );
-      } else if (line.startsWith('## ')) {
-        // Subheader
-        widgets.add(
-          Padding(
-            padding: EdgeInsets.only(bottom: 6, top: i > 0 ? 10 : 0),
-            child: Text(
-              line.substring(3),
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
+          // Inline code configuration
+          CodeConfig(
+            style: TextStyle(
+              color: Color(0xFF00ff88),
+              backgroundColor: Color(0xFF2d2d2d).withOpacity(0.6),
+              fontFamily: 'Courier New',
+              fontSize: 13,
             ),
           ),
-        );
-      } else if (line.startsWith('### ')) {
-        // Sub-subheader
-        widgets.add(
-          Padding(
-            padding: EdgeInsets.only(bottom: 4, top: i > 0 ? 8 : 0),
-            child: Text(
-              line.substring(4),
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+          // H1 heading configuration
+          H1Config(
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
             ),
           ),
-        );
-      } else if (line.startsWith('> ')) {
-        // Quote
-        widgets.add(
-          Padding(
-            padding: EdgeInsets.only(bottom: 8, top: i > 0 ? 12 : 0),
-
-            child: Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Color(0xFF2d2d2d).withOpacity(0.8),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Color(0xFF4a9eff).withOpacity(0.3),
-                  width: 1,
-                ),
-              ),
-              child: Text(
-                line.substring(2),
-                style: TextStyle(
-                  color: Colors.grey[300],
-                  fontSize: 14,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
+          // H2 heading configuration
+          H2Config(
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
             ),
           ),
-        );
-      } else if (line.startsWith('```')) {
-        // Code block
-        if (i == 0 || !lines[i - 1].startsWith('```')) {
-          widgets.add(
-            Padding(
-              padding: EdgeInsets.only(bottom: 8, top: i > 0 ? 12 : 0),
-              child: Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Color(0xFF2d2d2d).withOpacity(0.8),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Color(0xFF4a9eff).withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Text(
-                  line.substring(3), // Skip the ``` and language
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontFamily: 'Courier',
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }
-      } else {
-        // Regular text
-        widgets.add(
-          Padding(
-            padding: EdgeInsets.only(bottom: 8, top: i > 0 ? 12 : 0),
-            child: Text(
-              line,
-              style: TextStyle(color: Colors.grey[300], fontSize: 14),
+          // H3 heading configuration
+          H3Config(
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
             ),
           ),
-        );
-      }
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: widgets,
+          // H4 heading configuration
+          H4Config(
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          // H5 heading configuration
+          H5Config(
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          // H6 heading configuration
+          H6Config(
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          // Paragraph configuration
+          PConfig(
+            textStyle: TextStyle(
+              color: Colors.grey[300],
+              fontSize: 14,
+              height: 1.5,
+            ),
+          ),
+          // Link configuration
+          LinkConfig(
+            style: TextStyle(
+              color: Color(0xFF4a9eff),
+              fontSize: 14,
+              decoration: TextDecoration.underline,
+            ),
+            onTap: (url) {
+              // Handle link taps
+              _launchURL(url);
+            },
+          ),
+          // Blockquote configuration
+          // BlockquoteConfig(
+          //   style: TextStyle(
+          //     color: Colors.grey[300],
+          //     fontSize: 14,
+          //     fontStyle: FontStyle.italic,
+          //   ),
+          // ),
+          // Table configuration
+          TableConfig(),
+        ],
+      ),
+      shrinkWrap: true,
+      selectable: true,
     );
   }
 

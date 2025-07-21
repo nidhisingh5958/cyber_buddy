@@ -1,5 +1,6 @@
 import 'package:cyber_buddy/screens/chat_screen.dart';
 import 'package:cyber_buddy/screens/home_screen.dart';
+import 'package:cyber_buddy/screens/log_screen.dart';
 import 'package:cyber_buddy/screens/script_screen.dart';
 import 'package:cyber_buddy/screens/settings_screen.dart';
 import 'package:cyber_buddy/screens/tools_screen.dart';

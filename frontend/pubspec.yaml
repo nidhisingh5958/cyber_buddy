@@ -30,7 +30,9 @@ dependencies:
   shared_preferences: ^2.5.3  # Local storage
   path_provider: ^2.1.5   # File system access
   go_router: ^16.0.0  # Routing
-
+  markdown: ^7.3.0  # Markdown rendering
+  markdown_widget: ^2.3.2+8 # Markdown widget for Flutter
+  url_launcher: ^6.3.2  # Launch URLs
 
   cupertino_icons: ^1.0.8
   lucide_icons: ^0.257.0
