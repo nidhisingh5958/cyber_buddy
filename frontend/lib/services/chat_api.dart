@@ -16,7 +16,7 @@ class ChatService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      debugPrint('Response data: $data');
+      debugPrint('Response data: ${data['response']}');
       return data;
     } else {
       debugPrint('Error: ${response.reasonPhrase}');

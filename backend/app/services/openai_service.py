@@ -26,7 +26,6 @@ def generate_response(input_prompt: str):
                 model_name=DEFAULT_MODEL
             )
 
-
         # Create the prompt template
         prompt = ChatPromptTemplate.from_messages([
         ("system",
@@ -62,7 +61,7 @@ def generate_response(input_prompt: str):
         ])
 
             
-            # Create and invoke the chain
+        # Create and invoke the chain
         chain = prompt | llm | StrOutputParser()
         summary = chain.invoke({"cyberbuddy": prompt})
         logger.info("Generated response successfully.")

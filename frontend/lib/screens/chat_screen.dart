@@ -143,8 +143,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       setState(() {
         _chatTabs[_currentTabIndex].messages.add(
           ChatMessage(
-            // Fix the response handling
-            text: response.toString(),
+            text: response['response']?.toString() ?? 'No response',
             timestamp: DateTime.now(),
             isUser: false,
           ),
