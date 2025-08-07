@@ -30,8 +30,7 @@ app.add_middleware(
     allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["*"],
-)
+    allow_headers=["*"],)
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET_KEY"))
 
 @app.get('/')
